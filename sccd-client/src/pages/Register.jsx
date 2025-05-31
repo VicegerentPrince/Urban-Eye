@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaEnvelope, FaLock, FaUserCircle } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaUser, FaUserCircle, FaPhone } from 'react-icons/fa';
 
-function Login() {
+function Register() {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
+    phone: '',
     password: '',
+    confirmPassword: '',
     userType: 'citizen'
   });
   const [error, setError] = useState('');
@@ -24,26 +27,18 @@ function Login() {
     e.preventDefault();
     setError('');
     
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
     
-    console.log('Login attempt:', formData);
-    
-    switch(formData.userType) {
-      case 'citizen':
-        navigate('/citizen');
-        break;
-      case 'admin':
-        navigate('/admin');
-        break;
-      case 'official':
-        navigate('/official');
-        break;
-      default:
-        navigate('/citizen');
-    }
+    console.log('Registration attempt:', formData);
+    navigate('/login');
   };
 
   return (
@@ -69,8 +64,8 @@ function Login() {
               animate={{ y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h1>
-              <p className="text-gray-600">Sign in to continue to your dashboard</p>
+              <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h1>
+              <p className="text-gray-600">Join our community and start reporting issues</p>
             </motion.div>
             
             {error && (
@@ -90,6 +85,29 @@ function Login() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaUser className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition duration-200"
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -107,26 +125,25 @@ function Login() {
                   />
                 </div>
               </motion.div>
-              
+
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
+                transition={{ delay: 0.6 }}
               >
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaLock className="h-5 w-5 text-gray-400" />
+                    <FaPhone className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={formData.password}
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
                     onChange={handleChange}
                     className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition duration-200"
-                    placeholder="Enter your password"
-                    required
+                    placeholder="Enter your phone number"
                   />
                 </div>
               </motion.div>
@@ -134,9 +151,9 @@ function Login() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
+                transition={{ delay: 0.7 }}
               >
-                <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-2">Login As</label>
+                <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-2">Register As</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <FaUserCircle className="h-5 w-5 text-gray-400" />
@@ -150,39 +167,81 @@ function Login() {
                   >
                     <option value="citizen">Citizen</option>
                     <option value="official">Government Official</option>
-                    <option value="admin">Admin</option>
                   </select>
                 </div>
               </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                    Remember me
-                  </label>
-                </div>
-                <div className="text-sm">
-                  <a href="#" className="font-medium text-emerald-600 hover:text-emerald-500">
-                    Forgot password?
-                  </a>
-                </div>
-              </motion.div>
-              
+
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
+              >
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaLock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition duration-200"
+                    placeholder="Create a password"
+                    required
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+              >
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaLock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition duration-200"
+                    placeholder="Confirm your password"
+                    required
+                  />
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+                className="flex items-center"
+              >
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                  required
+                />
+                <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
+                  I agree to the{' '}
+                  <a href="#" className="font-medium text-emerald-600 hover:text-emerald-500">
+                    Terms and Conditions
+                  </a>
+                </label>
+              </motion.div>
+              
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 }}
               >
                 <motion.button
                   type="submit"
@@ -190,7 +249,7 @@ function Login() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Sign In
+                  Create Account
                 </motion.button>
               </motion.div>
             </form>
@@ -201,12 +260,12 @@ function Login() {
             className="px-8 py-6 bg-gray-50 border-t border-gray-100"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.9 }}
+            transition={{ delay: 1.2 }}
           >
             <p className="text-center text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="font-medium text-emerald-600 hover:text-emerald-500">
-                Create one now
+              Already have an account?{' '}
+              <Link to="/login" className="font-medium text-emerald-600 hover:text-emerald-500">
+                Sign in instead
               </Link>
             </p>
           </motion.div>
@@ -247,4 +306,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Register; 
