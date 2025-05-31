@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaEnvelope, FaLock, FaUser, FaUserCircle, FaPhone } from 'react-icons/fa';
+import { authService } from '../services/api';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ function Register() {
     userType: 'citizen'
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -23,7 +25,7 @@ function Register() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -37,8 +39,15 @@ function Register() {
       return;
     }
     
-    console.log('Registration attempt:', formData);
-    navigate('/login');
+    try {
+      setLoading(true);
+      await authService.register(formData);
+      navigate('/login');
+    } catch (error) {
+      setError(error.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -166,7 +175,7 @@ function Register() {
                     className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition duration-200"
                   >
                     <option value="citizen">Citizen</option>
-                    <option value="official">Government Official</option>
+                    <option value="admin">Admin</option>
                   </select>
                 </div>
               </motion.div>
@@ -306,4 +315,4 @@ function Register() {
   );
 }
 
-export default Register; 
+export default Register;

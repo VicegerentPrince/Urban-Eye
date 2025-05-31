@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPlus, FaMapMarkedAlt, FaInfoCircle, FaCalendarAlt, FaChartBar, FaClock, FaSpinner, FaCheckCircle } from 'react-icons/fa';
+import { issueService, authService } from '../services/api';
 
 function CitizenDashboard() {
   const [issues, setIssues] = useState([]);
@@ -14,27 +15,39 @@ function CitizenDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedIssue, setSelectedIssue] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // In a real app, you would fetch data from your API
-    // This is mock data
-    const mockIssues = [
-      { id: 1, title: 'Broken Street Light', date: '2023-10-15', category: 'infrastructure', priority: 'medium', status: 'pending', description: 'Street light at the corner of Main St and 5th Ave has been out for over a week, creating a safety hazard at night.' },
-      { id: 2, title: 'Water Leakage', date: '2023-10-10', category: 'water', priority: 'high', status: 'in-progress', description: 'Major water leak from a broken pipe near City Mall. Water is flowing onto the street and causing traffic issues.' },
-      { id: 3, title: 'Garbage Collection', date: '2023-09-28', category: 'sanitation', priority: 'low', status: 'resolved', description: 'Garbage has not been collected in Residential Area B for two weeks, causing sanitation concerns.' },
-    ];
-    
-    setTimeout(() => {
-      setIssues(mockIssues);
-      setStats({
-        total: mockIssues.length,
-        pending: mockIssues.filter(i => i.status === 'pending').length,
-        inProgress: mockIssues.filter(i => i.status === 'in-progress').length,
-        resolved: mockIssues.filter(i => i.status === 'resolved').length
-      });
-      setLoading(false);
-    }, 1000);
-  }, []);
+    // Check if user is logged in
+    const user = authService.getCurrentUser();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    // Fetch real data from the backend
+    const fetchIssues = async () => {
+      try {
+        setLoading(true);
+        const data = await issueService.getIssues();
+        setIssues(data);
+        
+        // Calculate stats from real data
+        setStats({
+          total: data.length,
+          pending: data.filter(i => i.status === 'pending').length,
+          inProgress: data.filter(i => i.status === 'in-progress').length,
+          resolved: data.filter(i => i.status === 'resolved').length
+        });
+      } catch (error) {
+        console.error('Error fetching issues:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIssues();
+  }, [navigate]);
 
   const getPriorityColor = (priority) => {
     switch(priority) {

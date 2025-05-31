@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaMapMarkerAlt, FaExclamationTriangle, FaCamera, FaFileUpload, FaTimes, FaCrosshairs } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaExclamationTriangle, FaCamera, FaFileUpload, FaTimes, FaCrosshairs, FaSpinner } from 'react-icons/fa';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -52,6 +52,8 @@ function LocationPicker({ onLocationSelect }) {
   );
 }
 
+import { authService, issueService } from '../services/api';
+
 function ReportIssue() {
   const [formData, setFormData] = useState({
     title: '',
@@ -66,6 +68,15 @@ function ReportIssue() {
   const [previewImages, setPreviewImages] = useState([]);
   const [showMap, setShowMap] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const user = authService.getCurrentUser();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -93,28 +104,55 @@ function ReportIssue() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.location) {
-      alert('Please select a location for the issue');
+    if (!formData.title || !formData.description || !formData.category || !formData.priority || !formData.location) {
+      alert('Please fill in all required fields and select a location');
       return;
     }
     
     setIsSubmitting(true);
     
-    // In a real app, you would send this to your API
-    console.log('Submitting issue:', {
-      ...formData,
-      date: new Date().toISOString(),
-      status: 'pending'
-    });
-    
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSuccess(true);
+    try {
+      // Create issue data object with proper format for backend
+      const issueData = new FormData();
       
-      setTimeout(() => {
-        navigate('/citizen');
-      }, 2000);
-    }, 1500);
+      // Add text fields
+      issueData.append('title', formData.title);
+      issueData.append('description', formData.description);
+      issueData.append('category', formData.category);
+      issueData.append('priority', formData.priority);
+      
+      // Add coordinates as separate lat/lng fields
+      if (formData.location) {
+        issueData.append('latitude', formData.location[0]);
+        issueData.append('longitude', formData.location[1]);
+        // Add a formatted location string
+        issueData.append('locationDescription', `${formData.location[0].toFixed(6)}, ${formData.location[1].toFixed(6)}`);
+      }
+      
+      // Add images
+      if (formData.images) {
+        Array.from(formData.images).forEach((image, index) => {
+          issueData.append(`images`, image);
+        });
+      }
+      
+      // Submit to backend
+      const response = await issueService.createIssue(issueData);
+      
+      if (response.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          navigate('/citizen');
+        }, 2000);
+      } else {
+        throw new Error(response.message || 'Failed to submit issue');
+      }
+    } catch (error) {
+      console.error('Error submitting issue:', error);
+      alert(error.message || 'Failed to submit issue. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const removeImage = (index) => {

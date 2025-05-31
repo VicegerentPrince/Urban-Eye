@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaEnvelope, FaLock, FaUserCircle } from 'react-icons/fa';
+import { authService } from '../services/api';
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ function Login() {
     userType: 'citizen'
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -20,7 +22,7 @@ function Login() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -29,20 +31,32 @@ function Login() {
       return;
     }
     
-    console.log('Login attempt:', formData);
-    
-    switch(formData.userType) {
-      case 'citizen':
-        navigate('/citizen');
-        break;
-      case 'admin':
-        navigate('/admin');
-        break;
-      case 'official':
-        navigate('/official');
-        break;
-      default:
-        navigate('/citizen');
+    try {
+      setLoading(true);
+      const userData = await authService.login(
+        formData.email,
+        formData.password,
+        formData.userType
+      );
+      
+      // Redirect based on user type
+      switch(userData.userType) {
+        case 'citizen':
+          navigate('/citizen');
+          break;
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'official':
+          navigate('/official');
+          break;
+        default:
+          navigate('/citizen');
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -149,7 +163,6 @@ function Login() {
                     className="pl-10 w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition duration-200"
                   >
                     <option value="citizen">Citizen</option>
-                    <option value="official">Government Official</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
@@ -184,14 +197,16 @@ function Login() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
               >
-                <motion.button
-                  type="submit"
-                  className="w-full bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition duration-300 flex items-center justify-center"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Sign In
-                </motion.button>
+                
+                 <motion.button
+                   type="submit"
+                 className="w-full bg-emerald-600 text-white py-3 px-4 rounded-xl hover:bg-emerald-700 transition duration-300 flex items-center justify-center"
+                   whileHover={{ scale: 1.02 }}
+                   whileTap={{ scale: 0.98 }}
+                   disabled={loading}
+                 >
+                   {loading ? 'Signing in...' : 'Sign In'}
+                 </motion.button>
               </motion.div>
             </form>
           </div>
@@ -246,5 +261,6 @@ function Login() {
     </div>
   );
 }
+
 
 export default Login;

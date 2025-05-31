@@ -2,17 +2,22 @@ import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaHome, FaChartBar, FaExclamationTriangle, FaMap, FaUser, FaCog, FaSignOutAlt, FaBars, FaTimes, FaCity } from 'react-icons/fa';
+import { authService } from '../services/api';
 
 function MainLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState({
-    name: 'John Doe',
-    role: 'citizen',
-    avatar: 'https://i.pravatar.cc/150?img=68'
-  });
+  const [user, setUser] = useState(null);
+
+  // Load user from localStorage on component mount
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+    }
+  }, []);
 
   // Handle scroll event for sticky navbar
   useEffect(() => {
@@ -32,8 +37,29 @@ function MainLayout() {
     return location.pathname === path;
   };
 
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    if (user) {
+      // Navigate based on user type
+      switch(user.userType) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'official':
+          navigate('/official');
+          break;
+        default:
+          navigate('/citizen');
+      }
+    } else {
+      // If no user is logged in, go to home
+      navigate('/');
+    }
+  };
+
   const handleLogout = () => {
-    // In a real app, you would handle logout logic here
+    authService.logout();
+    setUser(null);
     navigate('/');
   };
 
@@ -54,7 +80,7 @@ function MainLayout() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <Link to="/" className="flex items-center space-x-2">
+            <a href="#" onClick={handleLogoClick} className="flex items-center space-x-2">
               <motion.div
                 whileHover={{ rotate: 10, scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -69,33 +95,51 @@ function MainLayout() {
               >
                 Urban-Eye
               </motion.h1>
-            </Link>
+            </a>
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-6 ml-10">
-              <Link 
-                to="/" 
-                className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
-              >
-                <FaHome />
-                <span>Home</span>
-              </Link>
-              {!isHomePage && (
+              {!user && (
                 <>
                   <Link 
-                    to="/citizen" 
-                    className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/citizen') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                    to="/" 
+                    className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                  >
+                    <FaHome />
+                    <span>Home</span>
+                  </Link>
+                  <Link 
+                    to="/about" 
+                    className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/about') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                  >
+                    <span>About</span>
+                  </Link>
+                  <Link 
+                    to="/contact" 
+                    className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/contact') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                  >
+                    <span>Contact</span>
+                  </Link>
+                </>
+              )}
+              {user && (
+                <>
+                  <Link 
+                    to={`/${user.userType === 'admin' ? 'admin' : user.userType === 'official' ? 'official' : 'citizen'}`} 
+                    className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/citizen') || isActive('/admin') || isActive('/official') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
                   >
                     <FaChartBar />
                     <span>Dashboard</span>
                   </Link>
-                  <Link 
-                    to="/report" 
-                    className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/report') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
-                  >
-                    <FaExclamationTriangle />
-                    <span>Report Issue</span>
-                  </Link>
+                  {user.userType === 'citizen' && (
+                    <Link 
+                      to="/report" 
+                      className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/report') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                    >
+                      <FaExclamationTriangle />
+                      <span>Report Issue</span>
+                    </Link>
+                  )}
                   <Link 
                     to="/map" 
                     className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/map') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
@@ -103,178 +147,75 @@ function MainLayout() {
                     <FaMap />
                     <span>Map View</span>
                   </Link>
+                  <Link 
+                    to="/profile" 
+                    className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/profile') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                  >
+                    <FaUser />
+                    <span>Profile</span>
+                  </Link>
+                  {user.userType === 'admin' && (
+                    <Link 
+                      to="/settings" 
+                      className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/settings') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                    >
+                      <FaCog />
+                      <span>Settings</span>
+                    </Link>
+                  )}
                 </>
               )}
             </nav>
           </motion.div>
           
-          {/* User Menu (Desktop) */}
-          <motion.div 
-            className="hidden md:flex items-center space-x-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            {!isHomePage ? (
+          {/* User Menu */}
+          <div className="flex items-center space-x-4">
+            {user ? (
               <div className="flex items-center space-x-4">
-                <motion.div 
-                  className="flex items-center space-x-3"
-                  whileHover={{ scale: 1.05 }}
+                <Link
+                  to="/profile"
+                  className="flex items-center space-x-2 bg-white/10 hover:bg-white/20 rounded-full px-4 py-2 transition-colors duration-200"
                 >
-                  <img 
-                    src={user.avatar} 
-                    alt="User avatar" 
-                    className="w-8 h-8 rounded-full border-2 border-white"
-                  />
-                  <span className="font-medium">{user.name}</span>
-                </motion.div>
-                <motion.button
+                  <FaUser />
+                  <span className="hidden sm:inline">Profile</span>
+                </Link>
+                <button 
                   onClick={handleLogout}
-                  className="text-white hover:text-emerald-200 transition-colors duration-200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center space-x-2 bg-white/10 hover:bg-white/20 rounded-full px-4 py-2 transition-colors duration-200"
                 >
                   <FaSignOutAlt />
-                </motion.button>
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
               </div>
             ) : (
-              <div className="flex space-x-4">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate('/login')}
-                  className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition duration-200"
+              <div className="flex space-x-2">
+                <Link 
+                  to="/login" 
+                  className="bg-white/10 hover:bg-white/20 rounded-full px-4 py-2 transition-colors duration-200"
                 >
                   Login
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-white text-emerald-600 font-bold px-4 py-2 rounded-full transition duration-200"
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="bg-yellow-400 hover:bg-yellow-500 text-emerald-800 rounded-full px-4 py-2 transition-colors duration-200"
                 >
                   Register
-                </motion.button>
+                </Link>
               </div>
             )}
-          </motion.div>
-          
-          {/* Mobile menu button */}
-          <motion.button 
-            className="md:hidden focus:outline-none" 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            whileTap={{ scale: 0.9 }}
-          >
-            {isMenuOpen ? <FaTimes className="h-6 w-6" /> : <FaBars className="h-6 w-6" />}
-          </motion.button>
-        </div>
-        
-        {/* Mobile Navigation */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.nav 
-              className="md:hidden bg-emerald-700 py-3 px-4 space-y-3"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
+            
+            {/* Mobile menu button */}
+            <button 
+              className="md:hidden bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors duration-200"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              <Link 
-                to="/" 
-                className={`flex items-center space-x-2 hover:bg-emerald-800 px-3 py-2 rounded-lg transition duration-200 ${isActive('/') ? 'bg-emerald-800 font-semibold' : ''}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <FaHome />
-                <span>Home</span>
-              </Link>
-              {!isHomePage && (
-                <>
-                  <Link 
-                    to="/citizen" 
-                    className={`flex items-center space-x-2 hover:bg-emerald-800 px-3 py-2 rounded-lg transition duration-200 ${isActive('/citizen') ? 'bg-emerald-800 font-semibold' : ''}`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <FaChartBar />
-                    <span>Dashboard</span>
-                  </Link>
-                  <Link 
-                    to="/report" 
-                    className={`flex items-center space-x-2 hover:bg-emerald-800 px-3 py-2 rounded-lg transition duration-200 ${isActive('/report') ? 'bg-emerald-800 font-semibold' : ''}`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <FaExclamationTriangle />
-                    <span>Report Issue</span>
-                  </Link>
-                  <Link 
-                    to="/map" 
-                    className={`flex items-center space-x-2 hover:bg-emerald-800 px-3 py-2 rounded-lg transition duration-200 ${isActive('/map') ? 'bg-emerald-800 font-semibold' : ''}`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <FaMap />
-                    <span>Map View</span>
-                  </Link>
-                </>
-              )}
-              
-              {!isHomePage ? (
-                <div className="pt-2 border-t border-emerald-600">
-                  <div className="flex items-center space-x-3 px-3 py-2">
-                    <img 
-                      src={user.avatar} 
-                      alt="User avatar" 
-                      className="w-8 h-8 rounded-full border-2 border-white"
-                    />
-                    <span>{user.name}</span>
-                  </div>
-                  <Link 
-                    to="/profile" 
-                    className="flex items-center space-x-2 hover:bg-emerald-800 px-3 py-2 rounded-lg transition duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <FaUser />
-                    <span>Profile</span>
-                  </Link>
-                  <Link 
-                    to="/settings" 
-                    className="flex items-center space-x-2 hover:bg-emerald-800 px-3 py-2 rounded-lg transition duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <FaCog />
-                    <span>Settings</span>
-                  </Link>
-                  <button 
-                    onClick={() => {
-                      handleLogout();
-                      setIsMenuOpen(false);
-                    }}
-                    className="flex items-center space-x-2 w-full text-left hover:bg-emerald-800 px-3 py-2 rounded-lg transition duration-200"
-                  >
-                    <FaSignOutAlt />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="pt-2 border-t border-emerald-600 flex flex-col space-y-2">
-                  <Link 
-                    to="/login" 
-                    className="flex items-center justify-center bg-emerald-800 hover:bg-emerald-900 px-3 py-2 rounded-lg transition duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Login
-                  </Link>
-                  <Link 
-                    to="/register" 
-                    className="flex items-center justify-center bg-white text-emerald-600 font-bold px-3 py-2 rounded-lg transition duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Register
-                  </Link>
-                </div>
-              )}
-            </motion.nav>
-          )}
-        </AnimatePresence>
+              {isMenuOpen ? <FaTimes /> : <FaBars />}
+            </button>
+          </div>
+        </div>
       </motion.header>
       
+      {/* Rest of the component remains the same */}
       <main className="flex-grow pt-16">
         <Outlet />
       </main>
@@ -347,6 +288,112 @@ function MainLayout() {
           </motion.div>
         </div>
       </footer>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            className="fixed inset-0 z-40 bg-emerald-600 md:hidden"
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: 'tween' }}
+          >
+            <div className="flex flex-col h-full pt-20 px-4">
+              {!user ? (
+                <>
+                  <Link 
+                    to="/" 
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Home
+                  </Link>
+                  <Link 
+                    to="/about" 
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    About
+                  </Link>
+                  <Link 
+                    to="/contact" 
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Contact
+                  </Link>
+                  <Link 
+                    to="/login" 
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Register
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to={`/${user.userType === 'admin' ? 'admin' : user.userType === 'official' ? 'official' : 'citizen'}`}
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  {user.userType === 'citizen' && (
+                    <Link 
+                      to="/report" 
+                      className="text-white py-3 text-lg border-b border-emerald-500"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Report Issue
+                    </Link>
+                  )}
+                  <Link 
+                    to="/map" 
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Map View
+                  </Link>
+                  <Link 
+                    to="/profile" 
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  {user.userType === 'admin' && (
+                    <Link 
+                      to="/settings" 
+                      className="text-white py-3 text-lg border-b border-emerald-500"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                  )}
+                  <button 
+                    onClick={() => {
+                      handleLogout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="text-white py-3 text-lg border-b border-emerald-500 text-left"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
