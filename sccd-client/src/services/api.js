@@ -46,27 +46,23 @@ export const authService = {
 // Issue services
 export const issueService = {
   createIssue: async (issueData) => {
-    // Handle file uploads
-    const formData = new FormData();
-    
-    Object.keys(issueData).forEach(key => {
-      if (key === 'images' && issueData.images) {
-        for (let i = 0; i < issueData.images.length; i++) {
-          formData.append('images', issueData.images[i]);
+    try {
+      const response = await api.post('/issues', issueData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
-      } else if (key === 'coordinates' && issueData.coordinates) {
-        formData.append('coordinates', JSON.stringify(issueData.coordinates));
-      } else {
-        formData.append(key, issueData[key]);
-      }
-    });
-    
-    const response = await api.post('/issues', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-    return response.data;
+      });
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Error creating issue:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to create issue'
+      };
+    }
   },
   getIssues: async (filters = {}) => {
     const response = await api.get('/issues', { params: filters });

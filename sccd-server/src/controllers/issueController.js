@@ -6,31 +6,59 @@ const User = require('../models/User');
 // @access  Private
 const createIssue = async (req, res) => {
   try {
-    const { title, description, location, category, priority, coordinates } = req.body;
+    const { title, description, category, priority, latitude, longitude, locationDescription } = req.body;
 
     // Handle file uploads
     const images = [];
+    const videos = [];
+    
     if (req.files) {
       req.files.forEach(file => {
-        images.push(`/uploads/${file.filename}`);
+        if (file.mimetype.startsWith('image')) {
+          images.push(`/uploads/${file.filename}`);
+        } else if (file.mimetype.startsWith('video')) {
+          videos.push(`/uploads/${file.filename}`);
+        }
       });
     }
 
-    const issue = await Issue.create({
+    // Parse latitude and longitude to numbers
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    
+    // Ensure they are valid numbers
+    if (isNaN(lat) || isNaN(lng)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid coordinates. Please select a valid location.' 
+      });
+    }
+
+    const issue = new Issue({
       title,
       description,
-      location,
-      coordinates,
+      location: locationDescription || 'Unknown location',
+      coordinates: [lng, lat],
       category,
       priority,
       reporter: req.user._id,
-      images
+      images,
+      videos
     });
 
-    res.status(201).json(issue);
+    const createdIssue = await issue.save();
+
+    res.status(201).json({
+      success: true,
+      data: createdIssue
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    console.error('Error creating issue:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
   }
 };
 

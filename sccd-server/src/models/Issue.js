@@ -45,6 +45,9 @@ const issueSchema = new mongoose.Schema({
   images: [{
     type: String
   }],
+  videos: [{
+    type: String
+  }],
   comments: [{
     text: String,
     user: {

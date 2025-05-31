@@ -47,6 +47,7 @@ function MapView() {
         // Create a mapping of issue IDs to their coordinates for the FlyToMarker component
         const locations = {};
         data.forEach(issue => {
+          // Make sure we're using _id (from MongoDB) instead of id
           locations[issue._id] = issue.coordinates;
         });
         
@@ -96,16 +97,15 @@ function MapView() {
       'default': '#6B7280' // gray
     };
     
+    const color = priorityColors[priority] || priorityColors.default;
+    
     return new L.Icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-      iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+      iconUrl: priority === 'emergency' ? '/marker-icon-red.png' : '/marker-icon-blue.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
       iconSize: [25, 41],
       iconAnchor: [12, 41],
       popupAnchor: [1, -34],
-      shadowSize: [41, 41],
-      className: `marker-${priority}`,
-      // We'll use CSS to style the markers with different colors
+      shadowSize: [41, 41]
     });
   };
 
@@ -135,12 +135,12 @@ function MapView() {
               
               {issues.map(issue => (
                 <Marker 
-                  key={issue.id} 
+                  key={issue._id} 
                   position={issue.coordinates}
                   eventHandlers={{
                     click: () => handleIssueClick(issue),
                   }}
-                  // icon={getMarkerIcon(issue.priority)}
+                  icon={getMarkerIcon(issue.priority)}
                 >
                   <Popup>
                     <div className="text-sm">
@@ -184,8 +184,8 @@ function MapView() {
             <div className="space-y-4">
               {issues.map(issue => (
                 <div 
-                  key={issue.id} 
-                  className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition duration-300 ${selectedIssue?.id === issue.id ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}`}
+                  key={issue._id} 
+                  className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition duration-300 ${selectedIssue?._id === issue._id ? 'ring-2 ring-indigo-500 bg-indigo-50' : ''}`}
                   onClick={() => handleIssueClick(issue)}
                 >
                   <div className="flex justify-between items-start">

@@ -11,13 +11,11 @@ function MainLayout() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  // Load user from localStorage on component mount
+  // Load user from localStorage on component mount AND when location changes
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-    }
-  }, []);
+    setUser(currentUser); // Always set the user state (null if no user)
+  }, [location.pathname]); // Re-run when the route changes
 
   // Handle scroll event for sticky navbar
   useEffect(() => {
@@ -154,15 +152,22 @@ function MainLayout() {
                     <FaUser />
                     <span>Profile</span>
                   </Link>
-                  {user.userType === 'admin' && (
+                  <Link 
+                    to="/settings" 
+                    className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/settings') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                  >
+                    <FaCog />
+                    <span>Settings</span>
+                  </Link>
+                  {/* {user.userType === 'admin' && (
                     <Link 
                       to="/settings" 
-                      className={`flex items-center space-x-1 hover:text-emerald-200 transition-colors duration-200 ${isActive('/settings') ? 'font-semibold border-b-2 border-white pb-1' : ''}`}
+                      className="text-white py-3 text-lg border-b border-emerald-500"
+                      onClick={() => setIsMenuOpen(false)}
                     >
-                      <FaCog />
-                      <span>Settings</span>
+                      Settings
                     </Link>
-                  )}
+                  )} */}
                 </>
               )}
             </nav>
@@ -370,15 +375,13 @@ function MainLayout() {
                   >
                     Profile
                   </Link>
-                  {user.userType === 'admin' && (
-                    <Link 
-                      to="/settings" 
-                      className="text-white py-3 text-lg border-b border-emerald-500"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Settings
-                    </Link>
-                  )}
+                  <Link 
+                    to="/settings" 
+                    className="text-white py-3 text-lg border-b border-emerald-500"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Settings
+                  </Link>
                   <button 
                     onClick={() => {
                       handleLogout();

@@ -1,24 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaUsers, FaExclamationTriangle, FaChartBar, FaMapMarkedAlt, FaUserShield, FaFilter, FaSearch, FaEye, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
-
-// ... existing code ...
-
-// Add these imports at the top of the file
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix Leaflet icon issue
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
+import { FaChartBar, FaExclamationTriangle, FaUsers, FaMapMarkedAlt, FaFilter, FaSearch, FaTimes, FaUserShield, FaVideo, FaImage } from 'react-icons/fa';
+import { issueService, userService } from '../services/api';
 
 function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [issues, setIssues] = useState([]);
+  const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({
     totalIssues: 0,
     pendingIssues: 0,
@@ -27,49 +16,43 @@ function AdminDashboard() {
     activeUsers: 0,
     officials: 0
   });
-  
-  const [issues, setIssues] = useState([]);
-  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // In a real app, you would fetch data from your API
-    // This is mock data
-    const mockIssues = [
-      { id: 1, title: 'Broken Street Light', date: '2023-10-15', location: 'Main St & 5th Ave', category: 'infrastructure', priority: 'medium', status: 'pending', reportedBy: 'john.doe@example.com', assignedTo: 'maintenance@city.gov', description: 'Street light at the corner of Main St and 5th Ave has been out for over a week, creating a safety hazard at night.' },
-      { id: 2, title: 'Water Leakage', date: '2023-10-10', location: 'City Mall, Downtown', category: 'water', priority: 'high', status: 'in-progress', reportedBy: 'jane.smith@example.com', assignedTo: 'water@city.gov', description: 'Major water leak from a broken pipe near City Mall. Water is flowing onto the street and causing traffic issues.' },
-      { id: 3, title: 'Garbage Collection', date: '2023-09-28', location: 'Residential Area B', category: 'sanitation', priority: 'low', status: 'resolved', reportedBy: 'robert.johnson@example.com', assignedTo: 'sanitation@city.gov', description: 'Garbage has not been collected in Residential Area B for two weeks, causing sanitation concerns.' },
-      { id: 4, title: 'Pothole on Highway', date: '2023-10-18', location: 'Highway 101, Mile 24', category: 'roads', priority: 'high', status: 'pending', reportedBy: 'susan.miller@example.com', assignedTo: null, description: 'Large pothole on Highway 101 at mile marker 24, causing traffic slowdowns and potential vehicle damage.' },
-      { id: 5, title: 'Fallen Tree', date: '2023-10-20', location: 'Central Park', category: 'environment', priority: 'medium', status: 'in-progress', reportedBy: 'david.wilson@example.com', assignedTo: 'parks@city.gov', description: 'A large tree has fallen across the main walking path in Central Park after last night\'s storm.' },
-    ];
-    
-    const mockUsers = [
-      { id: 1, name: 'John Doe', email: 'john.doe@example.com', role: 'citizen', status: 'active', joinDate: '2023-01-15', reportCount: 8 },
-      { id: 2, name: 'Jane Smith', email: 'jane.smith@example.com', role: 'citizen', status: 'active', joinDate: '2023-02-20', reportCount: 5 },
-      { id: 3, name: 'Robert Johnson', email: 'robert.johnson@example.com', role: 'citizen', status: 'inactive', joinDate: '2023-03-10', reportCount: 2 },
-      { id: 4, name: 'Sarah Williams', email: 'sarah.williams@city.gov', role: 'official', status: 'active', joinDate: '2023-01-05', department: 'Water Management' },
-      { id: 5, name: 'Michael Brown', email: 'michael.brown@city.gov', role: 'official', status: 'active', joinDate: '2023-02-15', department: 'Road Maintenance' },
-      { id: 6, name: 'Emily Davis', email: 'emily.davis@city.gov', role: 'admin', status: 'active', joinDate: '2023-01-01', department: 'System Administration' },
-    ];
-    
-    setTimeout(() => {
-      setIssues(mockIssues);
-      setUsers(mockUsers);
-      setStats({
-        totalIssues: mockIssues.length,
-        pendingIssues: mockIssues.filter(i => i.status === 'pending').length,
-        resolvedIssues: mockIssues.filter(i => i.status === 'resolved').length,
-        totalUsers: mockUsers.length,
-        activeUsers: mockUsers.filter(u => u.status === 'active').length,
-        officials: mockUsers.filter(u => u.role === 'official').length
-      });
-      setLoading(false);
-    }, 1000);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch real issues data
+        const issuesData = await issueService.getIssues();
+        setIssues(issuesData);
+
+        // Fetch real users data
+        const usersData = await userService.getUsers();
+        setUsers(usersData);
+
+        // Fetch stats
+        const issueStats = await issueService.getIssueStats();
+        
+        setStats({
+          totalIssues: issueStats.total || 0,
+          pendingIssues: issueStats.byStatus?.pending || 0,
+          resolvedIssues: issueStats.byStatus?.resolved || 0,
+          totalUsers: usersData.length || 0,
+          activeUsers: usersData.filter(user => user.status === 'active').length || 0,
+          officials: usersData.filter(user => user.userType === 'official').length || 0
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const getPriorityColor = (priority) => {
@@ -83,11 +66,15 @@ function AdminDashboard() {
   };
 
   const getStatusBadge = (status) => {
-    switch(status) {
-      case 'pending': return <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Pending</span>;
-      case 'in-progress': return <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">In Progress</span>;
-      case 'resolved': return <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Resolved</span>;
-      default: return <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Unknown</span>;
+    switch (status) {
+      case 'pending':
+        return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>;
+      case 'in-progress':
+        return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">In Progress</span>;
+      case 'resolved':
+        return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Resolved</span>;
+      default:
+        return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">{status}</span>;
     }
   };
 
@@ -116,47 +103,72 @@ function AdminDashboard() {
     setSelectedUser(selectedUser && selectedUser.id === user.id ? null : user);
   };
 
+  // Inside the AdminDashboard component
+  
+  // Update the filteredIssues calculation
   const filteredIssues = issues.filter(issue => {
-    if (filterStatus !== 'all' && issue.status !== filterStatus) return false;
-    if (searchTerm && !issue.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    return true;
+    const matchesStatus = filterStatus === 'all' || issue.status === filterStatus;
+    const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          issue.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (issue.reporter?.name && issue.reporter.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesStatus && matchesSearch;
   });
+  
+  // Update the getStatusBadge function to handle all possible statuses
+  
 
   const filteredUsers = users.filter(user => {
-    if (searchTerm && !user.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !user.email.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    return true;
+    return user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           user.role?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const handleDeleteIssue = async (issueId) => {
-    if (window.confirm('Are you sure you want to delete this issue?')) {
-      try {
-        await issueService.deleteIssue(issueId);
-        // Refresh issues list
-        const updatedIssues = issues.filter(issue => issue._id !== issueId);
-        setIssues(updatedIssues);
-        setSelectedIssue(null);
-      } catch (error) {
-        console.error('Error deleting issue:', error);
-        alert('Failed to delete issue. Please try again.');
-      }
-    }
-  };
 
+  // Implement the handleUpdateIssueStatus function
   const handleUpdateIssueStatus = async (issueId, newStatus) => {
     try {
       await issueService.updateIssue(issueId, { status: newStatus });
-      // Update issue in the list
+      
+      // Update the issues state to reflect the change
       const updatedIssues = issues.map(issue => 
         issue._id === issueId ? { ...issue, status: newStatus } : issue
       );
       setIssues(updatedIssues);
+      
+      // If we're viewing the issue details, update the selected issue too
       if (selectedIssue && selectedIssue._id === issueId) {
         setSelectedIssue({ ...selectedIssue, status: newStatus });
       }
+      
+      // Show success message
+      alert(`Issue status updated to ${newStatus}`);
     } catch (error) {
       console.error('Error updating issue status:', error);
       alert('Failed to update issue status. Please try again.');
+    }
+  };
+
+  // Implement the handleDeleteIssue function
+  const handleDeleteIssue = async (issueId) => {
+    if (window.confirm('Are you sure you want to delete this issue?')) {
+      try {
+        await issueService.deleteIssue(issueId);
+        
+        // Remove the deleted issue from the state
+        const updatedIssues = issues.filter(issue => issue._id !== issueId);
+        setIssues(updatedIssues);
+        
+        // If we're viewing the issue details, close the modal
+        if (selectedIssue && selectedIssue._id === issueId) {
+          setSelectedIssue(null);
+        }
+        
+        // Show success message
+        alert('Issue deleted successfully');
+      } catch (error) {
+        console.error('Error deleting issue:', error);
+        alert('Failed to delete issue. Please try again.');
+      }
     }
   };
 
@@ -184,14 +196,20 @@ function AdminDashboard() {
   const handleUpdateUserStatus = async (userId, newStatus) => {
     try {
       await userService.updateUser(userId, { status: newStatus });
-      // Update user in the list
+      
+      // Update the users state to reflect the change
       const updatedUsers = users.map(user => 
         user._id === userId ? { ...user, status: newStatus } : user
       );
       setUsers(updatedUsers);
+      
+      // If we're viewing the user details, update the selected user too
       if (selectedUser && selectedUser._id === userId) {
         setSelectedUser({ ...selectedUser, status: newStatus });
       }
+      
+      // Show success message
+      alert(`User status updated to ${newStatus}`);
     } catch (error) {
       console.error('Error updating user status:', error);
       alert('Failed to update user status. Please try again.');
@@ -685,90 +703,121 @@ function AdminDashboard() {
               
               <AnimatePresence>
                 {selectedIssue && (
-                  <motion.div 
-                    className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-2xl font-bold">{selectedIssue.title}</h3>
-                        <button
-                          onClick={() => setSelectedIssue(null)}
-                          className="text-gray-500 hover:text-gray-700"
+        <motion.div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-start">
+              <h3 className="text-2xl font-bold">{selectedIssue.title}</h3>
+              <button
+                onClick={() => setSelectedIssue(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-gray-600">Category</p>
+                <p className="font-medium">{selectedIssue.category}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Priority</p>
+                <p className="font-medium">{selectedIssue.priority}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Status</p>
+                <select
+                  value={selectedIssue.status}
+                  onChange={(e) => handleUpdateIssueStatus(selectedIssue._id, e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+              <div>
+                <p className="text-gray-600">Reporter</p>
+                <p className="font-medium">{selectedIssue.reportedBy || 'Unknown'}</p>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <p className="text-gray-600">Description</p>
+              <p className="mt-1">{selectedIssue.description}</p>
+            </div>
+            
+            {/* Media Section */}
+            <div className="mt-6 space-y-4">
+              {/* Images */}
+              {selectedIssue.images && selectedIssue.images.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center mb-2">
+                    <FaImage className="text-indigo-500 mr-2" />
+                    <p className="text-gray-600">Images</p>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {selectedIssue.images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`Issue image ${index + 1}`}
+                        className="rounded-lg object-cover h-48 w-full cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(image, '_blank')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Videos */}
+              {selectedIssue.videos && selectedIssue.videos.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center mb-2">
+                    <FaVideo className="text-indigo-500 mr-2" />
+                    <p className="text-gray-600">Videos</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedIssue.videos.map((video, index) => (
+                      <div key={index} className="rounded-lg overflow-hidden">
+                        <video 
+                          controls 
+                          className="w-full h-auto"
                         >
-                          <FaTimes />
-                        </button>
+                          <source src={video} type={`video/${video.split('.').pop()}`} />
+                          Your browser does not support the video tag.
+                        </video>
                       </div>
-                      
-                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-gray-600">Category</p>
-                          <p className="font-medium">{selectedIssue.category}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Priority</p>
-                          <p className="font-medium">{selectedIssue.priority}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Status</p>
-                          <select
-                            value={selectedIssue.status}
-                            onChange={(e) => handleUpdateIssueStatus(selectedIssue._id, e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="resolved">Resolved</option>
-                          </select>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Reporter</p>
-                          <p className="font-medium">{selectedIssue.reportedBy || 'Unknown'}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4">
-                        <p className="text-gray-600">Description</p>
-                        <p className="mt-1">{selectedIssue.description}</p>
-                      </div>
-                      
-                      {selectedIssue.images && selectedIssue.images.length > 0 && (
-                        <div className="mt-4">
-                          <p className="text-gray-600 mb-2">Images</p>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {selectedIssue.images.map((image, index) => (
-                              <img
-                                key={index}
-                                src={image}
-                                alt={`Issue image ${index + 1}`}
-                                className="rounded-lg object-cover h-48 w-full"
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="mt-6 flex justify-end space-x-3">
-                        <button
-                          onClick={() => handleDeleteIssue(selectedIssue._id)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                        >
-                          Delete Issue
-                        </button>
-                        {selectedIssue.status !== 'resolved' && (
-                          <button
-                            onClick={() => handleUpdateIssueStatus(selectedIssue._id, 'resolved')}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                          >
-                            Mark as Resolved
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => handleDeleteIssue(selectedIssue._id)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete Issue
+              </button>
+              {selectedIssue.status !== 'resolved' && (
+                <button
+                  onClick={() => handleUpdateIssueStatus(selectedIssue._id, 'resolved')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Mark as Resolved
+                </button>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
               </AnimatePresence>
             </motion.div>
           )}

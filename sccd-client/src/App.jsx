@@ -12,6 +12,8 @@ import MapView from './pages/MapView';
 import Profile from './pages/Profile';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import AdminSettings from './pages/AdminSettings';
+import CitizenSettings from './pages/CitizenSettings';
 import { authService } from './services/api';
 
 // Protected route component
@@ -34,6 +36,12 @@ const ProtectedRoute = ({ children, userType }) => {
     }
   }
   
+  // If children is a function, pass the user to it
+  if (typeof children === 'function') {
+    return children({ user });
+  }
+  
+  // Otherwise, just render the children
   return children;
 };
 
@@ -75,6 +83,13 @@ function App() {
           <Route path="profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="settings" element={
+            <ProtectedRoute>
+              {({ user }) => (
+                user.userType === 'admin' ? <AdminSettings /> : <CitizenSettings />
+              )}
             </ProtectedRoute>
           } />
         </Route>

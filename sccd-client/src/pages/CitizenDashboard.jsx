@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaMapMarkedAlt, FaInfoCircle, FaCalendarAlt, FaChartBar, FaClock, FaSpinner, FaCheckCircle } from 'react-icons/fa';
+import { FaPlus, FaMapMarkedAlt, FaInfoCircle, FaCalendarAlt, FaChartBar, FaClock, FaSpinner, FaCheckCircle, FaVideo, FaImage } from 'react-icons/fa';
 import { issueService, authService } from '../services/api';
 
 function CitizenDashboard() {
@@ -736,7 +736,7 @@ function CitizenDashboard() {
             whileTap={{ scale: 0.98 }}
           >
             <Link
-              to="/report" 
+              to="/report"
               className="block bg-emerald-600 text-white py-4 px-6 rounded-xl hover:bg-emerald-700 transition duration-300 shadow-lg hover:shadow-xl"
             >
               Report an Issue

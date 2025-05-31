@@ -18,7 +18,7 @@ router.get('/map', getIssuesByLocation);
 
 // Protected routes
 router.route('/')
-  .post(protect, upload.array('images', 5), createIssue)
+  .post(protect, upload.array('images', 10), createIssue) // Increased limit to 10 files
   .get(protect, getIssues);
 
 router.get('/stats', protect, admin, getIssueStats);
